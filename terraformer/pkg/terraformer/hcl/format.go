@@ -23,6 +23,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/hashicorp/hcl/v2"
 	"github.com/hashicorp/hcl/v2/hclwrite"
 )
 
@@ -39,16 +40,16 @@ func Format(in fmt.Stringer) ([]byte, error) {
 	s = strings.ReplaceAll(s, "(\\\"", "(\"")
 	s = strings.ReplaceAll(s, "\\\")", "\")")
 
-	// Apply Terraform style (alignment etc.)
-	var err error
-	formatted := hclwrite.Format([]byte(s))
-	if err != nil {
+	// Parse first to surface syntax errors — hclwrite.Format silently ignores them.
+	_, diags := hclwrite.ParseConfig([]byte(s), "", hcl.InitialPos)
+	if diags.HasErrors() {
 		log.Println("Invalid HCL follows:")
 		for i, line := range strings.Split(s, "\n") {
-			fmt.Fprintf(os.Stdout, "%4d|\t%s\n", i+1, line)
+			_, _ = fmt.Fprintf(os.Stdout, "%4d|\t%s\n", i+1, line)
 		}
-		return nil, fmt.Errorf("error formatting HCL: %w", err)
+		return nil, fmt.Errorf("error formatting HCL: %w", diags)
 	}
 
-	return formatted, nil
+	// Apply Terraform style (alignment etc.)
+	return hclwrite.Format([]byte(s)), nil
 }
