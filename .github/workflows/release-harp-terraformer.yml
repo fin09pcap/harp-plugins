@@ -1,3 +1,4 @@
+}
 name: Release (Harp Terraformer)
 
 on:
@@ -19,7 +20,6 @@ jobs:
         include:
           # normal
           - golang-image: "golang"
-            golang-version: "1.17"
             tools-image: ghcr.io/elastic/harp/harp-tools:latest
             harp-image: harp-terraformer
           # fips
@@ -30,28 +30,38 @@ jobs:
     steps:
       -
         name: Check out the repo
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
       -
         name: Set up Go
-        uses: actions/setup-go@v2
+        id: setup-go
+        uses: actions/setup-go@v5
         with:
-          go-version: 1.17
+          go-version-file: terraformer/go.mod
+      -
+        name: Resolve Go version
+        id: go-version
+        run: |
+          if [ -n "${{ matrix.golang-version }}" ]; then
+            echo "version=${{ matrix.golang-version }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=${{ steps.setup-go.outputs.go-version }}" >> "$GITHUB_OUTPUT"
+          fi
       -
         name: Set up Docker Buildx
         id: buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v3
         with:
           install: true
       - name: Cache Docker layers
         uses: actions/cache@v4
         with:
           path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-multi-buildx-terraformer-${{ matrix.golang-version }}-${{ github.sha }}
+          key: ${{ runner.os }}-multi-buildx-terraformer-${{ steps.go-version.outputs.version }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-multi-buildx-terraformer-${{ matrix.golang-version }}-${{ github.sha }}
-            ${{ runner.os }}-multi-buildx-terraformer-${{ matrix.golang-version }}
+            ${{ runner.os }}-multi-buildx-terraformer-${{ steps.go-version.outputs.version }}-${{ github.sha }}
+            ${{ runner.os }}-multi-buildx-terraformer-${{ steps.go-version.outputs.version }}
             ${{ runner.os }}-multi-buildx-terraformer
       -
         name: Set Dockerfile settings
@@ -65,7 +75,7 @@ jobs:
         env:
           DOCKERFILE_ONLY: 1
           GOLANG_IMAGE: ${{ matrix.golang-image }}
-          GOLANG_VERSION: ${{ matrix.golang-version }}
+          GOLANG_VERSION: ${{ steps.go-version.outputs.version }}
           TOOL_IMAGE_NAME: ${{ matrix.tools-image }}
           RELEASE: ${{ github.event.inputs.release }}
       -
@@ -84,7 +94,7 @@ jobs:
       -
         name: Build Docker image
         id: docker_build
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v6
         with:
           context: .
           file: Dockerfile.release
@@ -97,7 +107,7 @@ jobs:
           cache-to: type=local,mode=max,dest=/tmp/.buildx-cache-new
           build-args: |
             GOLANG_IMAGE=${{ matrix.golang-image }}
-            GOLANG_VERSION=${{ matrix.golang-version }}
+            GOLANG_VERSION=${{ steps.go-version.outputs.version }}
             RELEASE=${{ github.event.inputs.release }}
       -
         name: Create SBOM
@@ -109,7 +119,7 @@ jobs:
           artifact-name: sbom.spdx
           format: spdx
       -
-        uses: sigstore/cosign-installer@main
+        uses: sigstore/cosign-installer@v3.8.2
       -
         name: Sign image and add attestations
         run: |
@@ -172,7 +182,7 @@ jobs:
           cd .dist
           sha512sum * > checksum.txt
       -
-        uses: sigstore/cosign-installer@main
+        uses: sigstore/cosign-installer@v3.8.2
       -
         name: Sign the checksum
         run: |
@@ -186,8 +196,8 @@ jobs:
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
       -
         name: Upload to release
-        uses: AButler/upload-release-assets@v2.0
+        uses: AButler/upload-release-assets@3d6774fae0ed91407dc5ae29d576b166536d1777  # v3.0
         with:
           files: '.dist/*'
           repo-token: ${{ secrets.GITHUB_TOKEN }}
-          release-tag: cmd/harp-terraformer/v${{ github.event.inputs.release }}
+          release-tag: terraformer/v${{ github.event.inputs.release }}

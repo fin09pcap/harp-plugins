@@ -1,35 +1,38 @@
-issues:
-  exclude-dirs-use-default: true
-  uniq-by-line: true
-  exclude-files:
-    - ".*\\.pb\\.go$"
-    - ".*\\.gen\\.go$"
-    - ".*\\_gen\\.go$"
-    - "mock_.*\\.go"
-    - ".*\\.resolvers\\.go$"
+version: "2"
 
 run:
   concurrency: 4
   timeout: 20m
-  issues-exit-code: 1
   tests: false
   modules-download-mode: readonly
   allow-parallel-runners: false
 
-# output configuration options
 output:
-  print-issued-lines: true
-  print-linter-name: true
-  sort-results: true
   sort-order:
     - linter
     - severity
     - file
   show-stats: true
 
+issues:
+  uniq-by-line: true
+
 linters:
+  exclusions:
+    generated: strict
+    paths:
+      - vendor
+      - third_party
+      - build
+      - tools
+      - ".*\\.pb\\.go$"
+      - ".*\\.gen\\.go$"
+      - ".*_gen\\.go$"
+      - "mock_.*\\.go"
+      - ".*\\.resolvers\\.go$"
   enable:
     - bodyclose
+    - copyloopvar
     - depguard
     - dogsled
     - errcheck
@@ -40,134 +43,143 @@ linters:
     - goconst
     - gocritic
     - gocyclo
-    - gofmt
     - goheader
-    - goimports
     - goprintffuncname
     - gosec
-    - gosimple
     - govet
     - ineffassign
     - misspell
     - nakedret
     - noctx
     - nolintlint
-    - rowserrcheck
     - revive
+    - rowserrcheck
     - staticcheck
-    - stylecheck
-    - typecheck
     - unconvert
     - unparam
     - unused
     - whitespace
 
-linters-settings:
-  dogsled:
-    max-blank-identifiers: 2
-  dupl:
-    threshold: 150
-  depguard:
-    rules:
-      main:
-        allow:
-          - $gostd
-          - github.com/elastic/harp-plugins/terraformer
-          - github.com/elastic/harp/
-          - github.com/elastic/harp/build/version
-          - github.com/elastic/harp/pkg/cso/v1
-          - github.com/elastic/harp/pkg/sdk/cmdutil
-          - github.com/elastic/harp/pkg/sdk/config
-          - github.com/elastic/harp/pkg/sdk/config/cmd
-          - github.com/elastic/harp/pkg/sdk/log
-          - github.com/elastic/harp/pkg/sdk/platform
-          - github.com/elastic/harp/pkg/sdk/types
-          - github.com/elastic/harp/pkg/template/engine
-          - github.com/elastic/harp/pkg/vault/path
-          - github.com/go-ozzo/ozzo-validation
-          - github.com/gosimple/slug
-          - github.com/hashicorp/hcl
-          - github.com/spf13/cobra
-          - go.uber.org/zap
-          - google.golang.org/protobuf
-          - gopkg.in/yaml.v2
-  errcheck:
-    check-type-assertions: false
-    check-blank: false
-    exclude-functions:
-      - fmt:.*
-      - io/ioutil:^Read.*
-  exhaustive:
-    check-generated: false
-    default-signifies-exhaustive: false
-  goimports:
-    local: "github.com/elastic"
-  golint:
-    min-confidence: 0.8
-  gofmt:
-    simplify: true
-  gocyclo:
-    min-complexity: 15
-  misspell:
-    locale: US
-  lll:
-    line-length: 140
-    tab-width: 1
-  gci:
-    sections:
-      - prefix(github.com/elastic)
-  gocognit:
-    min-complexity: 20
-  goconst:
-    min-len: 3
-    min-occurrences: 3
-  nestif:
-    min-complexity: 4
-  gomnd:
-    settings:
-      mnd:
-        checks: argument,case,condition,return
-  unused:
-    check-exported: false
-  unparam:
-    check-exported: false
-  nakedret:
-    max-func-lines: 30
-  prealloc:
-    simple: true
-    range-loops: true
-    for-loops: false
-  funlen:
-    lines: 100
-    statements: 50
-  gomodguard:
-    blocked:
-      modules:
-        - github.com/BurntSushi/toml:
-            recommandations:
-              - github.com/pelletier/go-toml
-  goheader:
-    template: |-
-      Licensed to Elasticsearch B.V. under one or more contributor
-      license agreements. See the NOTICE file distributed with
-      this work for additional information regarding copyright
-      ownership. Elasticsearch B.V. licenses this file to you under
-      the Apache License, Version 2.0 (the "License"); you may
-      not use this file except in compliance with the License.
-      You may obtain a copy of the License at
+  settings:
+    dogsled:
+      max-blank-identifiers: 2
+    dupl:
+      threshold: 150
+    depguard:
+      rules:
+        main:
+          allow:
+            - $gostd
+            - github.com/elastic/harp-plugins/terraformer
+            - github.com/elastic/harp/
+            - github.com/elastic/harp/build/version
+            - github.com/elastic/harp/pkg/cso/v1
+            - github.com/elastic/harp/pkg/sdk/cmdutil
+            - github.com/elastic/harp/pkg/sdk/config
+            - github.com/elastic/harp/pkg/sdk/config/cmd
+            - github.com/elastic/harp/pkg/sdk/log
+            - github.com/elastic/harp/pkg/sdk/platform
+            - github.com/elastic/harp/pkg/sdk/types
+            - github.com/elastic/harp/pkg/template/engine
+            - github.com/elastic/harp/pkg/vault/path
+            - github.com/go-ozzo/ozzo-validation
+            - github.com/gosimple/slug
+            - github.com/hashicorp/hcl
+            - github.com/spf13/cobra
+            - go.uber.org/zap
+            - google.golang.org/protobuf
+            - gopkg.in/yaml.v2
+    errcheck:
+      check-type-assertions: false
+      check-blank: false
+      exclude-functions:
+        - fmt:.*
+        - io/ioutil.Read.*
+    exhaustive:
+      default-signifies-exhaustive: false
+    gocyclo:
+      min-complexity: 15
+    gosec:
+      excludes:
+        - G115
+    misspell:
+      locale: US
+    gocognit:
+      min-complexity: 20
+    goconst:
+      min-len: 3
+      min-occurrences: 3
+    nestif:
+      min-complexity: 4
+    unused:
+      exported-fields-are-used: false
+    unparam:
+      check-exported: false
+    nakedret:
+      max-func-lines: 30
+    prealloc:
+      simple: true
+      range-loops: true
+      for-loops: false
+    funlen:
+      lines: 100
+      statements: 50
+    gomodguard:
+      blocked:
+        modules:
+          - github.com/BurntSushi/toml:
+              recommendations:
+                - github.com/pelletier/go-toml
+    goheader:
+      template: |-
+        Licensed to Elasticsearch B.V. under one or more contributor
+        license agreements. See the NOTICE file distributed with
+        this work for additional information regarding copyright
+        ownership. Elasticsearch B.V. licenses this file to you under
+        the Apache License, Version 2.0 (the "License"); you may
+        not use this file except in compliance with the License.
+        You may obtain a copy of the License at
 
-          http://www.apache.org/licenses/LICENSE-2.0
+            http://www.apache.org/licenses/LICENSE-2.0
 
-      Unless required by applicable law or agreed to in writing,
-      software distributed under the License is distributed on an
-      "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
-      KIND, either express or implied.  See the License for the
-      specific language governing permissions and limitations
-      under the License.
-  gocritic:
-    enabled-tags:
-      - diagnostic
-      - performance
-      - style
-      - experimental
-      - opinionated
+        Unless required by applicable law or agreed to in writing,
+        software distributed under the License is distributed on an
+        "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+        KIND, either express or implied.  See the License for the
+        specific language governing permissions and limitations
+        under the License.
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - performance
+        - style
+        - opinionated
+        - experimental
+    revive:
+      rules:
+        - name: exported
+          disabled: true
+        - name: package-comments
+          disabled: true
+        - name: var-naming
+          disabled: true
+    staticcheck:
+      checks:
+        - "all"
+        - "-QF1003"
+        - "-QF1008"
+        - "-ST1000"
+        - "-ST1003"
+        - "-ST1020"
+        - "-ST1021"
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    gofmt:
+      simplify: true
+    goimports:
+      local-prefixes:
+        - github.com/elastic
