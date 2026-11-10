@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"os"
 	"runtime"
+	"strings"
 
 	"github.com/elastic/harp/build/artifact"
 	"github.com/elastic/harp/build/mage/git"
@@ -60,8 +61,13 @@ func Tools() error {
 		return err
 	}
 
-	color.Yellow("> Installing golangci-lint")
-	if err := sh.RunV("go", "install", "github.com/golangci/golangci-lint/cmd/golangci-lint@latest"); err != nil {
+	// Use the version pinned in .tool-versions so it stays authoritative.
+	lintVersion, err := toolVersion("golangci-lint")
+	if err != nil {
+		return err
+	}
+	color.Yellow("> Installing golangci-lint v%s", lintVersion)
+	if err := sh.RunV("go", "install", "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v"+lintVersion); err != nil {
 		return err
 	}
 
@@ -71,6 +77,21 @@ func Tools() error {
 	}
 
 	return nil
+}
+
+// toolVersion returns the version pinned for the given tool in .tool-versions.
+func toolVersion(tool string) (string, error) {
+	content, err := os.ReadFile(".tool-versions")
+	if err != nil {
+		return "", fmt.Errorf("unable to read .tool-versions: %w", err)
+	}
+	for _, line := range strings.Split(string(content), "\n") {
+		fields := strings.Fields(line)
+		if len(fields) >= 2 && fields[0] == tool {
+			return fields[1], nil
+		}
+	}
+	return "", fmt.Errorf("%s not pinned in .tool-versions", tool)
 }
 
 // Build the artefact
